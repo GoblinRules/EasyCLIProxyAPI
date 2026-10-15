@@ -16,6 +16,7 @@ const path = require('node:path');
     page.setDefaultTimeout(45000);
     const status = await page.evaluate(() => window.__TAURI_INTERNALS__.invoke('get_core_status'));
     assert.equal(path.resolve(status.installDir).toLowerCase(), path.join(lab,'cpa-core').toLowerCase(), 'Only operate the separate lab core');
+    if (!status.running) await page.evaluate(() => window.__TAURI_INTERNALS__.invoke('start_core_process'));
     await page.waitForFunction(async () => (await window.__TAURI_INTERNALS__.invoke('get_core_status')).ready, null, {timeout:60000});
     const nav = page.locator('.nav-section');
     await nav.getByRole('button', { name: 'Plugins', exact: true }).click();

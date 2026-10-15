@@ -9,6 +9,7 @@ import subprocess
 import time
 import tomllib
 import zipfile
+import yaml
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--plugins', type=Path, required=True, help='ecpa-plugins source workspace with packaged releases')
@@ -20,6 +21,7 @@ root = Path(__file__).resolve().parents[1]
 binary = root / 'src-tauri/target/release/cpa-gui.exe'
 output = args.output.resolve()
 assert binary.is_file() and args.core.is_file(), 'Build the GUI and provide the core first'
+assert (args.core.parent / 'config.example.yaml').is_file(), 'Use an extracted official core release including config.example.yaml'
 assert not output.exists(), 'Use a new output directory; existing lab data is never overwritten'
 assert 1024 <= args.port <= 65535
 catalogue = json.loads((args.plugins / 'registry.json').read_text())['plugins']
@@ -36,6 +38,7 @@ oauth = output / 'oauth'
 oauth.mkdir()
 shutil.copy2(binary, output / 'ECPA-Plugin-Lab.exe')
 shutil.copy2(args.core, core / 'cli-proxy-api.exe')
+shutil.copy2(args.core.parent / 'config.example.yaml', core / 'config.example.yaml')
 registry = 'https://raw.githubusercontent.com/GoblinRules/ecpa-plugins/master/registry.json'
 configs = {}
 paths = {}
@@ -76,11 +79,11 @@ auth-dir-user-selected = true
 management-secret-key = {json.dumps(key)}
 plugins-enabled = true
 ''')
-(core / 'config.yaml').write_text(json.dumps({'host': '127.0.0.1', 'port': args.port,
+(core / 'config.yaml').write_text(yaml.safe_dump({'host': '127.0.0.1', 'port': args.port,
     'auth-dir': oauth.as_posix(), 'api-keys': [secrets.token_urlsafe(32)],
     'remote-management': {'allow-remote': False, 'secret-key': key, 'disable-control-panel': True},
-    'plugins': {'enabled': True, 'dir': (core / 'plugins').as_posix(), 'store-sources': [registry], 'configs': configs}}, indent=2))
-(core / 'cpa-gui-meta.json').write_text(json.dumps({'version': '8.0.29', 'asset_name': 'CLIProxyAPI_8.0.29_windows_amd64.zip', 'installed_at_unix': int(time.time())}))
+    'plugins': {'enabled': True, 'dir': (core / 'plugins').as_posix(), 'store-sources': [registry], 'configs': configs}}, sort_keys=False))
+(core / 'cpa-gui-meta.json').write_text(json.dumps({'version': '8.0.29', 'assetName': 'CLIProxyAPI_8.0.29_windows_amd64.zip', 'installedAtUnix': int(time.time())}))
 # Deliberately omit portable-app.json: the stock updater must not replace this lab build.
 (output / 'Launch-Plugin-Lab.cmd').write_text('@echo off\r\ncd /d "%~dp0"\r\nstart "" "%~dp0ECPA-Plugin-Lab.exe"\r\n')
 commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
