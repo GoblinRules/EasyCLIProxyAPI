@@ -14,7 +14,7 @@ The integration branch is `integration/plugin-experience`. Individual PR branche
 ```powershell
 bun install --frozen-lockfile
 python -m pip install PyYAML
-bun tauri build --no-bundle --config src-tauri/tauri.integration.conf.json
+./scripts/build-plugin-lab.ps1
 python scripts/prepare-plugin-lab.py --plugins C:/path/to/ecpa-plugins --core C:/path/to/cli-proxy-api.exe
 ```
 
@@ -36,6 +36,8 @@ This is not an OS sandbox. Other features such as Agent Configuration and system
 Verified on Windows, 2026-10-15: full TypeScript/Vite and optimized Tauri build; 8 targeted unit tests; both combined browser workflows; real WebView opening/unlocking MCP Manager against the separate core; sidebar persistence; real store navigation; and a clean application restart with core v8.0.29 auto-start and restored sidebar pin. Four upstream unused-code warnings remain in the Rust build. The native check validates navigation, not an actual plugin upgrade/download.
 
 Packaging must copy the core's `config.example.yaml`, write `cpa-gui-meta.json` with camelCase fields, and generate block-style YAML for the core configuration. JSON-shaped YAML works in the core but does not work with the app's config rewriting path; these details were caught and corrected during native startup testing.
+
+Use the build wrapper above: application update manifests validate their GitCode fallback URLs even when fetched through GitHub. Omitting the official build's `GITCODE_GUI_REPOSITORY` and `GITCODE_CORE_REPOSITORY` compile-time settings makes all app-version checks fail. The wrapper supplies those settings without changing the calling shell permanently. Check detection only in this lab; keep its custom executable rather than installing a stock app update.
 
 ```powershell
 bun test tests/pluginPins.test.ts tests/pluginUpdates.test.ts tests/pluginStoreSources.test.ts

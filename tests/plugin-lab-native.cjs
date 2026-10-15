@@ -16,8 +16,11 @@ const path = require('node:path');
     page.setDefaultTimeout(45000);
     const status = await page.evaluate(() => window.__TAURI_INTERNALS__.invoke('get_core_status'));
     assert.equal(path.resolve(status.installDir).toLowerCase(), path.join(lab,'cpa-core').toLowerCase(), 'Only operate the separate lab core');
-    if (!status.running) await page.evaluate(() => window.__TAURI_INTERNALS__.invoke('start_core_process'));
+    // Do not manually start it: that would hide a broken auto-start configuration.
     await page.waitForFunction(async () => (await window.__TAURI_INTERNALS__.invoke('get_core_status')).ready, null, {timeout:60000});
+    const update = await page.evaluate(() => window.__TAURI_INTERNALS__.invoke('check_app_update'));
+    assert(update.currentVersion && update.latestVersion, 'Desktop version detection succeeds');
+    assert.equal(update.autoUpdateSupported, false, 'Stock updates cannot replace the custom lab');
     const nav = page.locator('.nav-section');
     await nav.getByRole('button', { name: 'Plugins', exact: true }).click();
     const pin = page.getByRole('checkbox', { name: 'Pin to sidebar: MCP Manager', exact: true });
@@ -43,6 +46,6 @@ const path = require('node:path');
     await card.getByRole('button',{name:'Find in store',exact:true}).click();
     await page.getByRole('combobox',{name:'Store source',exact:true}).waitFor();
     await page.screenshot({path:'test-artifacts/native-store.png'});
-    console.log('PASS native WebView: real core, sidebar pin, real MCP plugin iframe/unlock, sample paths, persisted pin, card icon, store navigation');
+    console.log('PASS native WebView: core auto-start, desktop update detection, stock-update isolation, sidebar pin, real MCP plugin iframe/unlock, sample paths, persisted pin, card icon, store navigation');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});
