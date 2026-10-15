@@ -3,6 +3,8 @@ dist/
 src-tauri/gen/
 src-tauri/target/
 bin-work/
+test-artifacts/
+integration-build/
 cpa-core/
 /portable-app.json
 
